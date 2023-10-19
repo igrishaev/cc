@@ -3,30 +3,27 @@
 
 
 (defmacro component
-  {:style/indent 1}
-  [slots & compojure]
+  {:style/indent 2}
+  [ClassName slots & compojure]
 
-  `(defrecord ~'CompojureRouter [~@slots ~'routes]
+  `(defrecord ~ClassName [~@slots ~'-routes]
 
      clojure.lang.IFn
 
      (invoke [_ request#]
-       (~'routes request#))
+       (~'-routes request#))
 
      sfd.Lifecycle
 
      (start [this#]
        (let [routes# (routes ~@compojure)]
-         (assoc this# :routes routes#)))
-
-     (stop [this#]
-       ...)))
+         (assoc this# :-routes routes#)))))
 
 #_
-(component [handler-this
-            handler-that
-            handler-foo
-            not-found]
+(component CompojureHandler [handler-this
+                             handler-that
+                             handler-foo
+                             not-found]
 
   (GET "/sdfsf" request (handler-this request))
   (POST "/sdfsf" request (handler-this request))

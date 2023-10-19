@@ -1,5 +1,6 @@
 (ns cc.jetty
   (:import
+   java.io.Writer
    org.eclipse.jetty.server.Server)
   (:require
    [ring.adapter.jetty :as jetty]
@@ -38,6 +39,11 @@
         (.stop server)
         (assoc this :server nil))
       this)))
+
+
+(defmethod print-method JettyServer
+  [obj ^Writer writer]
+  (.write writer (str obj)))
 
 
 (defn component
