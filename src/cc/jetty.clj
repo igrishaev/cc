@@ -14,6 +14,11 @@
                         ;; runtime
                         ^Server server]
 
+  clojure.lang.IDeref
+
+  (deref [_]
+    server)
+
   Object
 
   (toString [_]
