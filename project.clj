@@ -14,10 +14,20 @@
   :profiles
   {:dev
    {:dependencies
+
     [[org.clojure/clojure "1.11.1"]
+
+     #_[metosin/malli "0.13.0"]
+
      [org.clojure/java.jdbc "0.7.11"]
+     [com.github.seancorfield/next.jdbc "1.3.894"]
      [org.postgresql/postgresql "42.2.16"]
      [hikari-cp "2.13.0"]
+
      [ring/ring-jetty-adapter "1.7.1"]
+
      [im.chit/cronj "1.4.4"]
-     [org.clojure/core.cache "1.0.225"]]}})
+
+     [org.clojure/core.cache "1.0.225"]
+
+     ]}})

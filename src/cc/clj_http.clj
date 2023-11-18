@@ -3,12 +3,30 @@
    java.io.Writer)
   (:refer-clojure :exclude [get])
   (:require
+   [cc.core :as cc]
    [clj-http.client :as client]
    [clj-http.conn-mgr :as conn-mgr]
    [com.stuartsierra.component :as component]))
 
 
-(defprotocol IClient
+(def SPEC
+  [:map
+   [:throw-entire-message? {:optional true} :boolean]
+   [:throw-exceptions {:optional true} :boolean]
+   [:as {:optional true} :keyword]
+   [:accept {:optional true} :keyword]
+   [:cache {:optional true} :boolean]
+   [:connection-manager {:optional true}
+    [:map
+     [:timeout {:optional true} :int]
+     [:threads {:optional true} :int]]]])
+
+
+(defprotocol IComponent
+
+  (request
+    [this method url]
+    [this method url opt])
 
   (GET
     [this url]
@@ -36,18 +54,18 @@
 
   (OPTIONS
     [this url]
-    [this url opt])
-
-  (request
-    [this method url]
-    [this method url opt]))
+    [this url opt]))
 
 
 (defrecord CljHttpClient [;; init
-                          defaults
+                          config
                           ;; runtime
-                          params
-                          cm]
+                          params]
+
+  cc/IComponent
+
+  (spec [this]
+    SPEC)
 
   Object
 
@@ -57,34 +75,70 @@
   component/Lifecycle
 
   (start [this]
-    (if cm
+    (if (:connection-manager params)
       this
-      (let [cm
-            (conn-mgr/make-reusable-conn-manager {})
-
-            params
-            (assoc defaults :connection-manager cm)]
-
+      (let [params
+            (update config
+                    :connection-manager
+                    conn-mgr/make-reusable-conn-manager)]
         (assoc this :params params))))
 
   (stop [this]
-    (when cm
-      (conn-mgr/shutdown-manager cm))
-    (assoc this :cm nil :params nil))
+    (some-> params :connection-manager conn-mgr/shutdown-manager)
+    (assoc this :params nil))
 
-  IClient
+  IComponent
+
+  (request [this method url]
+    (request this method url nil))
+
+  (request [this method url opt]
+    (client/request (-> params
+                        (merge opt)
+                        (assoc :url url
+                               :method method))))
+
+  (GET [this url]
+    (request this :get url))
+
+  (GET [this url opt]
+    (request this :get url opt))
+
+  (HEAD [this url]
+    (request this :head url))
+
+  (HEAD [this url opt]
+    (request this :head url opt))
 
   (POST [this url]
-    (client/post url params))
+    (request this :post url))
 
   (POST [this url opt]
-    (client/post url (merge params opt)))
+    (request this :post url opt))
 
   (PUT [this url]
-    (client/put url params))
+    (request this :put url))
 
   (PUT [this url opt]
-    (client/put url (merge params opt))))
+    (request this :put url opt))
+
+  (PATCH [this url]
+    (request this :patch url))
+
+  (PATCH [this url opt]
+    (request this :patch url opt))
+
+  (DELETE [this url]
+    (request this :delete url))
+
+  (DELETE [this url opt]
+    (request this :delete url opt))
+
+  (OPTIONS [this url]
+    (request this :options url))
+
+  (OPTIONS [this url opt]
+    (request this :options url opt)))
 
 
 (defmethod print-method CljHttpClient
@@ -92,5 +146,21 @@
   (.write writer (.toString obj)))
 
 
-(defn component [defaults]
-  (map->CljHttpClient {:defaults defaults}))
+(defn component
+  ([]
+   (component nil))
+  ([config]
+   (map->CljHttpClient {:config config})))
+
+
+(comment
+
+  (def c1 (component))
+
+  (def c2 (component/start c1))
+
+  (:status (GET c2 "https://grishaev.me"))
+
+  (def c3 (component/stop c2))
+
+  )
