@@ -15,10 +15,12 @@
 {:pool cc.hikari-cp/component}
 
 
+#_
 (defprotocol IComponent
   (spec [this]))
 
 
+#_
 (extend-protocol IComponent
   Object
   (spec [_]))
